@@ -50,15 +50,39 @@ teamsBot.conversationUpdate("membersAdded", async (context, state) => {
   );
 });
 
-// Listen for ANY message to be received. MUST BE AFTER ANY OTHER MESSAGE HANDLERS
+
+// // Listen for ANY message to be received. MUST BE AFTER ANY OTHER MESSAGE HANDLERS
+// teamsBot.activity(ActivityTypes.Message, async (context, state) => {
+//   // Increment count state
+//   let count = state.conversation.count ?? 0;
+//   state.conversation.count = ++count;
+
+//   // Echo back users request
+//   await context.sendActivity(`[${count}] you said: ${context.activity.text}`);
+// });
+// Make sure you're using Node 18+ or have installed a fetch polyfill
+const axios = require('axios'); // If using older Node versions
+
 teamsBot.activity(ActivityTypes.Message, async (context, state) => {
-  // Increment count state
   let count = state.conversation.count ?? 0;
   state.conversation.count = ++count;
 
-  // Echo back users request
-  await context.sendActivity(`[${count}] you said: ${context.activity.text}`);
+  const userMessage = context.activity.text;
+
+  try {
+    const response = await axios.post('http://localhost:8000/chat', {
+      user_prompt: userMessage
+    });
+
+    const data = response.data;
+
+    await context.sendActivity(`[${count}] API says: ${data["answer"] || JSON.stringify(data)}`);
+  } catch (error) {
+    console.error('API call failed:', error);
+    await context.sendActivity(`[${count}] API call failed. Please try again later.`);
+  }
 });
+
 
 teamsBot.activity(/^message/, async (context, state) => {
   await context.sendActivity(`Matched with regex: ${context.activity.type}`);
